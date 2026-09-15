@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Sola - Complete your payment</title>
+<style>
+  body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#f4f5f7;margin:0;padding:16px;color:#1b1f24}
+  .card{max-width:520px;margin:0 auto;background:#fff;border-radius:14px;padding:22px;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+  h1{font-size:20px;margin:0 0 10px}
+  .row{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #eef0f3;font-size:15px}
+  .row b{font-weight:600;text-align:end}
+  .total{font-size:18px}
+  .muted{color:#6b7280;font-size:13px;margin-top:10px}
+  p{white-space:pre-line;line-height:1.6}
+  #targetElement{margin-top:18px;min-height:40px}
+  .lp-submit-button{width:100%;margin-top:14px;padding:12px;border:0;border-radius:10px;background:#1b1f24;color:#fff;font-size:16px;cursor:pointer}
+  .lp-submit-button:disabled{opacity:.6}
+  #st-error-message{color:#b42318;font-size:13px;margin-top:8px}
+  .spinner{display:inline-block;width:18px;height:18px;border:2px solid #d0d5dd;border-top-color:#1b1f24;border-radius:50%;animation:s 1s linear infinite;vertical-align:middle;margin-inline-end:8px}
+  @keyframes s{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="card" id="card"><h1><span class="spinner"></span>Loading your booking...</h1></div>
+<script src="https://payment-wrapper.liteapi.travel/dist/liteAPIPayment.js?v=a1"></script>
+<script>
+(function () {
+  // The checkout data (incl. the payment session key) is fetched from Sola's backend at load time
+  // using the one-time token in the link; nothing sensitive lives in this file.
+  var API = "https://n8n-staging.vialink-kw.com/webhook/hotel-checkout";
+  var q = new URLSearchParams(location.search);
+  var card = document.getElementById("card");
+  var esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+  var T = {
+    en: { t: "Complete your payment", hotel: "Hotel", room: "Room", dates: "Dates", guest: "Guest", total: "Total", nights: function (n) { return n + " night" + (n == 1 ? "" : "s"); },
+          note: "Secure card payment (Visa / Mastercard). Your booking confirmation will be sent to you in the chat right after payment.",
+          invalid: "This payment link is not valid or has expired.", ask: "Please ask Sola for a new link.", booked: "This booking is already confirmed", ref: "Booking reference", fail: "Could not load your booking. Please try again in a moment or ask Sola for a new link." },
+    ar: { t: "إتمام الدفع", hotel: "الفندق", room: "الغرفة", dates: "التواريخ", guest: "الضيف", total: "المبلغ الإجمالي", nights: function (n) { return n == 1 ? "ليلة" : n == 2 ? "ليلتين" : n + " ليالي"; },
+          note: "الدفع الآمن بالبطاقة (فيزا / ماستركارد). بعد إتمام الدفع راح يوصلك تأكيد الحجز في المحادثة.",
+          invalid: "رابط الدفع غير صالح أو انتهت صلاحيته.", ask: "اطلب من سولا رابط جديد.", booked: "تم تأكيد الحجز مسبقاً", ref: "رقم الحجز", fail: "ما قدرنا نحمّل حجزك. جرّب بعد شوي أو اطلب من سولا رابط جديد." }
+  };
+  function setLang(lang) { var ar = lang === "ar"; document.documentElement.lang = ar ? "ar" : "en"; document.documentElement.dir = ar ? "rtl" : "ltr"; return T[ar ? "ar" : "en"]; }
+  function show(html) { card.innerHTML = html; }
+  function fail(L, msg) { show("<h1>" + esc(msg || L.fail) + "</h1><p class=\"muted\">" + esc(L.ask) + "</p>"); }
+  if (!q.get("pb") || !q.get("k")) { fail(setLang("en"), T.en.invalid); return; }
+  fetch(API + "?pb=" + encodeURIComponent(q.get("pb")) + "&k=" + encodeURIComponent(q.get("k")) + "&format=json", { cache: "no-store" })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      var L = setLang(d.language);
+      if (!d || !d.ok) return fail(L, L.invalid);
+      if (d.state === "booked") return show("<h1>" + esc(L.booked) + " ✅</h1><p>" + esc(L.ref) + ": <b>" + esc(d.booking_id) + "</b></p>");
+      var total = esc(d.price) + " " + esc(d.currency) + (d.quoted_currency && d.quoted_currency !== d.currency ? " (≈ " + esc(d.quoted_price) + " " + esc(d.quoted_currency) + ")" : "");
+      show("<h1>" + esc(L.t) + "</h1>"
+        + "<div class=\"row\"><span>" + L.hotel + "</span><b>" + esc(d.hotel_name) + "</b></div>"
+        + "<div class=\"row\"><span>" + L.room + "</span><b>" + esc(d.room) + "</b></div>"
+        + "<div class=\"row\"><span>" + L.dates + "</span><b>" + esc(d.checkin) + " → " + esc(d.checkout) + " (" + L.nights(Number(d.nights)) + ")</b></div>"
+        + "<div class=\"row\"><span>" + L.guest + "</span><b>" + esc(d.guest) + "</b></div>"
+        + "<div class=\"row total\"><span>" + L.total + "</span><b>" + total + "</b></div>"
+        + "<p class=\"muted\">" + esc(L.note) + "</p><div id=\"targetElement\"></div>");
+      var liteAPIPayment = new LiteAPIPayment({ publicKey: d.sdk_mode || "live", appearance: { theme: "flat" }, options: { business: { name: "Sola" } },
+        targetElement: "#targetElement", secretKey: d.secret_key, returnUrl: d.return_url, submitButton: { text: L.t } });
+      liteAPIPayment.handlePayment();
+    })
+    .catch(function () { fail(setLang("en")); });
+})();
+</script>
+</body>
+</html>
