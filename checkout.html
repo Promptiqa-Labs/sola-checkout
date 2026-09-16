@@ -34,10 +34,10 @@
   var card = document.getElementById("card");
   var esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
   var T = {
-    en: { t: "Complete your payment", hotel: "Hotel", room: "Room", dates: "Dates", guest: "Guest", total: "Total", nights: function (n) { return n + " night" + (n == 1 ? "" : "s"); },
+    en: { t: "Complete your payment", hotel: "Hotel", room: "Room", rooms: "Rooms", dates: "Dates", guest: "Guest", total: "Total", nights: function (n) { return n + " night" + (n == 1 ? "" : "s"); },
           note: "Secure card payment (Visa / Mastercard). Your booking confirmation will be sent to you in the chat right after payment.",
           invalid: "This payment link is not valid or has expired.", ask: "Please ask Sola for a new link.", booked: "This booking is already confirmed", ref: "Booking reference", fail: "Could not load your booking. Please try again in a moment or ask Sola for a new link." },
-    ar: { t: "إتمام الدفع", hotel: "الفندق", room: "الغرفة", dates: "التواريخ", guest: "الضيف", total: "المبلغ الإجمالي", nights: function (n) { return n == 1 ? "ليلة" : n == 2 ? "ليلتين" : n + " ليالي"; },
+    ar: { t: "إتمام الدفع", hotel: "الفندق", room: "الغرفة", rooms: "عدد الغرف", dates: "التواريخ", guest: "الضيف", total: "المبلغ الإجمالي", nights: function (n) { return n == 1 ? "ليلة" : n == 2 ? "ليلتين" : n + " ليالي"; },
           note: "الدفع الآمن بالبطاقة (فيزا / ماستركارد). بعد إتمام الدفع راح يوصلك تأكيد الحجز في المحادثة.",
           invalid: "رابط الدفع غير صالح أو انتهت صلاحيته.", ask: "اطلب من سولا رابط جديد.", booked: "تم تأكيد الحجز مسبقاً", ref: "رقم الحجز", fail: "ما قدرنا نحمّل حجزك. جرّب بعد شوي أو اطلب من سولا رابط جديد." }
   };
@@ -55,6 +55,7 @@
       show("<h1>" + esc(L.t) + "</h1>"
         + "<div class=\"row\"><span>" + L.hotel + "</span><b>" + esc(d.hotel_name) + "</b></div>"
         + "<div class=\"row\"><span>" + L.room + "</span><b>" + esc(d.room) + "</b></div>"
+        + (Number(d.rooms) > 1 ? "<div class=\"row\"><span>" + L.rooms + "</span><b>" + esc(d.rooms) + "</b></div>" : "")
         + "<div class=\"row\"><span>" + L.dates + "</span><b>" + esc(d.checkin) + " → " + esc(d.checkout) + " (" + L.nights(Number(d.nights)) + ")</b></div>"
         + "<div class=\"row\"><span>" + L.guest + "</span><b>" + esc(d.guest) + "</b></div>"
         + "<div class=\"row total\"><span>" + L.total + "</span><b>" + total + "</b></div>"
